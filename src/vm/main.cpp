@@ -3,7 +3,7 @@
 int main() {
     EvaVM vm;
     auto result = vm.exec(R"(
-        42
+        (+ "Hello" "world")
     )");
 
     log(result.asNumber());

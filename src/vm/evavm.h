@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include "../parser/eva_parser.h"
+#include "evavalue.h"
+#include "logger.h"
+#include "opcodes.h"
+#include <array>
+#include <memory>
 #include <string>
 #include <vector>
-#include <array>
-#include "opcodes.h"
-#include "logger.h"
-#include "evavalue.h"
 
 constexpr size_t STACK_LIMIT = 512;
 
@@ -22,11 +24,11 @@ do { \
 
 class EvaVM {
 public:
-    EvaVM() = default;
+    EvaVM() : parser(std::make_unique<syntax::eva_parser>()) {};
 
     EvaValue exec(const std::string &program) {
-        // TODO: parse the program
-        // TODO: compile the program to bytecode
+        auto ast = parser->parse(program);
+
         code = {OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT};
 
         constants.push_back(NUMBER(3));
@@ -108,6 +110,8 @@ private:
         sp--;
         return *sp;
     }
+
+    std::unique_ptr<syntax::eva_parser> parser;
 
     std::vector<uint8_t> code;
     const uint8_t *ip;

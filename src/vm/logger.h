@@ -14,4 +14,4 @@ public:
 
 #define DIE ErrorLogMessage()
 
-#define log(value) std::cout << #value << " = " << std::hex << (value) << '\n'
+#define log(value) std::cout << #value << " = " << (value) << '\n'
