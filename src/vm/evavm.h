@@ -56,7 +56,15 @@ public:
                     break;
                 }
                 case OP_ADD: {
-                    BINARY_OP(+);
+                    auto stack2 = pop();
+                    auto stack1 = pop();
+                    if (isNumber(stack2) && isNumber(stack1)) {
+                        push(NUMBER(stack1.asNumber() + stack2.asNumber()));
+                    }
+                    if (isObjectType(stack2, ObjectType::STRING)
+                        && isObjectType(stack1, ObjectType::STRING)) {
+                        push(allocString(stack1.asCppString() + stack2.asCppString()));
+                    }
                     break;
                 }
                 case OP_SUB: {
