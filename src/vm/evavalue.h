@@ -94,4 +94,3 @@ inline EvaValue allocCode(std::string name)
 }
 
 #define NUMBER(x) EvaValue({.type = EvaValueType::NUMBER, .number = x})
-#define STRING(x) EvaValue({.type = EvaValueType::OBJECT, .object = new StringObject(x)})

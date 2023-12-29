@@ -7,6 +7,14 @@ do { \
   } \
 } while (0)
 
+#define CHECK_CPPNUMBER(number, expected) \
+    do { \
+        if (number != expected) { \
+            DIE << __LINE__ << " Test failed, actual: " << number << " expected: " << expected \
+                << '\n'; \
+        } \
+    } while (0)
+
 #define CHECK_STRING(evaVal, expected) \
     do { \
         if (evaVal.asCppString() != expected) { \
@@ -15,7 +23,8 @@ do { \
         } \
     } while (0)
 
-int main() {
+int main()
+{
     EvaVM vm;
     CHECK_NUMBER(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT}, {NUMBER(10), NUMBER(3.5)}),
                  13.5);
@@ -24,7 +33,7 @@ int main() {
     CHECK_NUMBER(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_DIV, OP_HALT}, {NUMBER(5), NUMBER(2)}), 2.5);
 
     CHECK_STRING(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT},
-                         {STRING("Hello"), STRING(" world")}),
+                         {allocString("Hello"), allocString(" world")}),
                  "Hello world");
 
     // Test compiler
@@ -38,7 +47,29 @@ int main() {
     )#"),
                  "Hello world");
 
-    // TODO: check if constants are deduplicated
+    {
+        EvaCompiler c;
+        syntax::eva_parser p;
+        std::unique_ptr<CodeObject> co{c.compile(p.parse(R"#((+ 1 1))#"), "test")};
+        CHECK_CPPNUMBER(co->constants.size(), 1);
+    }
+
+    {
+        EvaCompiler c;
+        syntax::eva_parser p;
+        std::unique_ptr<CodeObject> co{c.compile(p.parse(R"#((+ "hello" "hello"))#"), "test")};
+        CHECK_CPPNUMBER(co->constants.size(), 1);
+    }
+
+    CHECK_NUMBER(vm.exec(R"#(
+    (+ 1 3)
+    )#"),
+                 4);
+
+    CHECK_STRING(vm.exec(R"#(
+    (+ "Hello" "Hello")
+    )#"),
+                 "HelloHello");
 
     std::cout << "All tests passed\n";
 }
