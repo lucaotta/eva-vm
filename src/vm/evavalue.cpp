@@ -1,16 +1,16 @@
 #include "evavalue.h"
 
-double EvaValue::asNumber()
+double EvaValue::asNumber() const
 {
     return this->number;
 }
 
-Object *EvaValue::asObject()
+Object *EvaValue::asObject() const
 {
     return this->object;
 }
 
-StringObject *EvaValue::asString()
+StringObject *EvaValue::asString() const
 {
     if (type == EvaValueType::OBJECT && object->type == ObjectType::STRING) {
         return (StringObject *) object;
@@ -18,7 +18,7 @@ StringObject *EvaValue::asString()
     return nullptr;
 }
 
-std::string EvaValue::asCppString()
+std::string EvaValue::asCppString() const
 {
     if (type == EvaValueType::OBJECT && object->type == ObjectType::STRING) {
         auto sobj = (StringObject *) object;
@@ -28,7 +28,7 @@ std::string EvaValue::asCppString()
     }
 }
 
-CodeObject *EvaValue::asCodeObject()
+CodeObject *EvaValue::asCodeObject() const
 {
     if (type == EvaValueType::OBJECT && object->type == ObjectType::CODE) {
         return (CodeObject *) object;

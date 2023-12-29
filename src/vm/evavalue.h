@@ -25,11 +25,11 @@ struct EvaValue
         Object *object;
     };
 
-    double asNumber();
-    Object *asObject();
-    StringObject *asString();
-    std::string asCppString();
-    CodeObject *asCodeObject();
+    double asNumber() const;
+    Object *asObject() const;
+    StringObject *asString() const;
+    std::string asCppString() const;
+    CodeObject *asCodeObject() const;
 };
 
 struct Object
@@ -63,19 +63,24 @@ struct CodeObject : public Object
     std::vector<EvaValue> constants;
 };
 
-inline bool isNumber(EvaValue val)
+inline bool isNumber(const EvaValue &val)
 {
     return val.type == EvaValueType::NUMBER;
 }
 
-inline bool isObject(EvaValue val)
+inline bool isObject(const EvaValue &val)
 {
     return val.type == EvaValueType::OBJECT;
 }
 
-inline bool isObjectType(EvaValue val, ObjectType type)
+inline bool isObjectType(const EvaValue &val, ObjectType type)
 {
     return isObject(val) && val.asObject()->type == type;
+}
+
+inline bool isString(const EvaValue &val)
+{
+    return isObjectType(val, ObjectType::STRING);
 }
 
 inline EvaValue allocString(std::string str)
