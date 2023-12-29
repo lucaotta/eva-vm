@@ -5,9 +5,11 @@
 #pragma once
 
 #include "../parser/eva_parser.h"
+#include "eva_compiler.h"
 #include "evavalue.h"
 #include "logger.h"
 #include "opcodes.h"
+
 #include <array>
 #include <memory>
 #include <string>
@@ -24,24 +26,22 @@ do { \
 
 class EvaVM {
 public:
-    EvaVM() : parser(std::make_unique<syntax::eva_parser>()) {};
+    EvaVM()
+        : parser(std::make_unique<syntax::eva_parser>()){};
 
     EvaValue exec(const std::string &program) {
         auto ast = parser->parse(program);
 
-        code = {OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT};
-
-        constants.push_back(NUMBER(3));
-        constants.push_back(NUMBER(2));
-
-        ip = &code[0];
-
+        EvaCompiler comp;
+        co = comp.compile(ast, "main");
+        ip = &co.code[0];
         return eval();
     }
 
     EvaValue exec(const std::vector<uint8_t> &code, std::vector<EvaValue> constants) {
-        this->constants = std::move(constants);
-        ip = &code[0];
+        co.constants = std::move(constants);
+        co.code = std::move(code);
+        ip = &co.code[0];
         sp = stack.begin();
         return eval();
     }
@@ -54,7 +54,7 @@ public:
                     return pop();
                 case OP_CONST: {
                     auto constIndex = read_byte();
-                    push(constants[constIndex]);
+                    push(co.constants[constIndex]);
                     break;
                 }
                 case OP_ADD: {
@@ -113,11 +113,9 @@ private:
 
     std::unique_ptr<syntax::eva_parser> parser;
 
-    std::vector<uint8_t> code;
+    CodeObject co = {"main"};
     const uint8_t *ip;
 
     std::array<EvaValue, STACK_LIMIT> stack;
-    EvaValue *sp { stack.begin() };
-
-    std::vector<EvaValue> constants;
+    EvaValue *sp{stack.begin()};
 };

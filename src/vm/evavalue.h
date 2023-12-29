@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 enum class EvaValueType {
     NUMBER,
@@ -9,6 +10,25 @@ enum class EvaValueType {
 
 enum class ObjectType {
     STRING,
+    CODE,
+};
+
+struct Object;
+struct StringObject;
+struct CodeObject;
+
+struct EvaValue
+{
+    EvaValueType type;
+    union {
+        double number;
+        Object *object;
+    };
+
+    double asNumber();
+    Object *asObject();
+    StringObject *asString();
+    std::string asCppString();
 };
 
 struct Object
@@ -30,34 +50,16 @@ struct StringObject : public Object
     std::string string;
 };
 
-struct EvaValue {
-    EvaValueType type;
-    union {
-        double number;
-        Object *object;
-    };
+struct CodeObject : public Object
+{
+    CodeObject(std::string name)
+        : Object(ObjectType::CODE)
+        , name(std::move(name))
+    {}
 
-    double asNumber() { return this->number; }
-
-    Object *asObject() { return this->object; }
-
-    StringObject *asString()
-    {
-        if (type == EvaValueType::OBJECT && object->type == ObjectType::STRING) {
-            return (StringObject *) object;
-        }
-        return nullptr;
-    }
-
-    std::string asCppString()
-    {
-        if (type == EvaValueType::OBJECT && object->type == ObjectType::STRING) {
-            auto sobj = (StringObject *) object;
-            return sobj->string;
-        } else {
-            return "";
-        }
-    }
+    std::string name;
+    std::vector<uint8_t> code;
+    std::vector<EvaValue> constants;
 };
 
 inline bool isNumber(EvaValue val)
@@ -77,8 +79,8 @@ inline bool isObjectType(EvaValue val, ObjectType type)
 
 inline EvaValue allocString(std::string str)
 {
-    return EvaValue{EvaValueType::OBJECT, .object = new StringObject(std::move(str))};
+    return EvaValue{.type = EvaValueType::OBJECT, .object = new StringObject(std::move(str))};
 }
 
-#define NUMBER(x) EvaValue({EvaValueType::NUMBER, .number = x})
-#define STRING(x) EvaValue({EvaValueType::OBJECT, .object = new StringObject(x)})
+#define NUMBER(x) EvaValue({.type = EvaValueType::NUMBER, .number = x})
+#define STRING(x) EvaValue({.type = EvaValueType::OBJECT, .object = new StringObject(x)})

@@ -17,13 +17,25 @@ do { \
 
 int main() {
     EvaVM vm;
-    CHECK_NUMBER(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT}, {NUMBER(10), NUMBER(3)}), 13);
+    CHECK_NUMBER(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT}, {NUMBER(10), NUMBER(3.5)}),
+                 13.5);
     CHECK_NUMBER(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_SUB, OP_HALT}, {NUMBER(10), NUMBER(3)}), 7);
     CHECK_NUMBER(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_MUL, OP_HALT}, {NUMBER(5), NUMBER(2)}), 10);
     CHECK_NUMBER(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_DIV, OP_HALT}, {NUMBER(5), NUMBER(2)}), 2.5);
 
     CHECK_STRING(vm.exec({OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT},
                          {STRING("Hello"), STRING(" world")}),
+                 "Hello world");
+
+    // Test compiler
+    CHECK_NUMBER(vm.exec(R"#(
+    42.2
+    )#"),
+                 42.2);
+
+    CHECK_STRING(vm.exec(R"#(
+    "Hello world"
+    )#"),
                  "Hello world");
 
     std::cout << "All tests passed\n";

@@ -63,11 +63,11 @@ enum class ExpType {
 struct Exp {
   ExpType type;
 
-  int number;
+  double number;
   std::string string;
   std::vector<Exp> list;
 
-  Exp(int number) : type(ExpType::NUMBER), number(number) {}
+  Exp(double number) : type(ExpType::NUMBER), number(number) {}
   Exp(std::string str) {
     if (str[0] == '"') {
       type = ExpType::STRING;
@@ -690,7 +690,7 @@ void _handler4(yyparse& parser) {
 // Semantic action prologue.
 auto _1 = POP_T();
 
-auto __ = Exp(std::stoi(_1)) ;
+auto __ = Exp(std::stod(_1)) ;
 
  // Semantic action epilogue.
 PUSH_VR();

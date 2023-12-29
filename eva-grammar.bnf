@@ -29,11 +29,11 @@ enum class ExpType {
 struct Exp {
   ExpType type;
 
-  int number;
+  double number;
   std::string string;
   std::vector<Exp> list;
 
-  Exp(int number) : type(ExpType::NUMBER), number(number) {}
+  Exp(double number) : type(ExpType::NUMBER), number(number) {}
   Exp(std::string str) {
     if (str[0] == '"') {
       type = ExpType::STRING;
@@ -58,7 +58,7 @@ Exp
     ;
 
 Atom
-    : NUMBER     { $$ = Exp(std::stoi($1)) }
+    : NUMBER     { $$ = Exp(std::stod($1)) }
     | STRING     { $$ = Exp($1) }
     | SYMBOL     { $$ = Exp($1) }
     ;
