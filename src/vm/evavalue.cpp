@@ -5,6 +5,11 @@ double EvaValue::asNumber() const
     return this->number;
 }
 
+bool EvaValue::asBool() const
+{
+    return this->boolean;
+}
+
 Object *EvaValue::asObject() const
 {
     return this->object;

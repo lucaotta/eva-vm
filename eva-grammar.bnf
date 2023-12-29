@@ -9,7 +9,7 @@
 \s+                          %empty
 \d+(\.\d+)?                  NUMBER
 \"[^\"]*\"                   STRING
-[\w\-*+/<>=]+                SYMBOL
+[\w\-*+/<>=!]+                SYMBOL
 
 /lex
 

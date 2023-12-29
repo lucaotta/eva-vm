@@ -2,7 +2,6 @@
 
 #include "../parser/eva_parser.h"
 #include "evavalue.h"
-#include "logger.h"
 #include "opcodes.h"
 
 #include <map>
@@ -13,6 +12,14 @@
         generate(exp.list[1]); \
         generate(exp.list[2]); \
         emit(op); \
+    } while (0)
+
+#define GEN_COMPARISON_OP(op) \
+    do { \
+        generate(exp.list[1]); \
+        generate(exp.list[2]); \
+        emit(OP_COMP); \
+        emit(uint8_t(op)); \
     } while (0)
 
 class EvaCompiler
@@ -37,54 +44,77 @@ private:
     void genNumber(const Exp &exp)
     {
         emit(OP_CONST);
-        emit(getNumericConstant(exp));
+        emit(getNumericConstant(exp.number));
     }
     void genString(const Exp &exp)
     {
         emit(OP_CONST);
-        emit(getStringConstant(exp));
+        emit(getStringConstant(exp.string));
     }
-    void genSymbol(const Exp &exp) { DIE << "Unimplemented Sybol"; }
+    /*
+     * Handles variables and built-in
+     */
+    void genSymbol(const Exp &exp)
+    {
+        if (exp.string == "true" || exp.string == "false") {
+            emit(OP_CONST);
+            emit(getBoolConstant(exp.string == "true" ? true : false));
+        }
+    }
     void genList(const Exp &exp)
     {
         if (exp.list[0].type == ExpType::SYMBOL) {
             auto op = exp.list[0].string;
             if (op == "+") {
                 GEN_BINARY_OP(OP_ADD);
-            }
-            if (op == "-") {
+            } else if (op == "-") {
                 GEN_BINARY_OP(OP_SUB);
-            }
-            if (op == "*") {
+            } else if (op == "*") {
                 GEN_BINARY_OP(OP_MUL);
-            }
-            if (op == "/") {
+            } else if (op == "/") {
                 GEN_BINARY_OP(OP_DIV);
+            }
+            // Handle comparison operators
+            // eg. (< 5 10)
+            else if (comparison.count(op) > 0) {
+                GEN_COMPARISON_OP(comparison[op]);
             }
         }
     }
 
-    int getNumericConstant(const Exp &exp)
+    int getNumericConstant(double value)
     {
         for (int i = 0; i < co->constants.size(); i++) {
             const auto c = co->constants[i];
-            if (exp.type == ExpType::NUMBER && isNumber(c) && c.asNumber() == exp.number) {
+            if (isNumber(c) && c.asNumber() == value) {
                 return i;
             }
         }
-        co->constants.push_back(NUMBER(exp.number));
+        co->constants.push_back(NUMBER(value));
         return co->constants.size() - 1;
     }
 
-    int getStringConstant(const Exp &exp)
+    int getBoolConstant(bool value)
     {
         for (int i = 0; i < co->constants.size(); i++) {
             const auto c = co->constants[i];
-            if (exp.type == ExpType::STRING && isString(c) && c.asCppString() == exp.string) {
+            if (isBool(c) && c.asBool() == value) {
                 return i;
             }
         }
-        co->constants.push_back(allocString(exp.string));
+        co->constants.push_back(BOOLEAN(value));
+        return co->constants.size() - 1;
+    }
+
+    int getStringConstant(const std::string &value)
+    {
+        for (int i = 0; i < co->constants.size(); i++) {
+            const auto c = co->constants[i];
+            if (isString(c) && c.asCppString() == value) {
+                return i;
+            }
+        }
+        co->constants.push_back(allocString(value));
         return co->constants.size() - 1;
     }
 
@@ -98,10 +128,24 @@ private:
             [this](const Exp &e) { genString(e); },
         },
         {
+            ExpType::SYMBOL,
+            [this](const Exp &e) { genSymbol(e); },
+        },
+        {
             ExpType::LIST,
             [this](const Exp &e) { genList(e); },
         },
     };
 
     CodeObject *co{nullptr};
+    static std::map<std::string, ComparisonType> comparison;
+};
+
+std::map<std::string, ComparisonType> EvaCompiler::comparison{
+    {">", ComparisonType::GT},
+    {">=", ComparisonType::GE},
+    {"<", ComparisonType::LT},
+    {"<=", ComparisonType::LE},
+    {"=", ComparisonType::EQ},
+    {"!=", ComparisonType::NEQ},
 };

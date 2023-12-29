@@ -5,6 +5,7 @@
 
 enum class EvaValueType {
     NUMBER,
+    BOOL,
     OBJECT,
 };
 
@@ -22,10 +23,12 @@ struct EvaValue
     EvaValueType type;
     union {
         double number;
+        bool boolean;
         Object *object;
     };
 
     double asNumber() const;
+    bool asBool() const;
     Object *asObject() const;
     StringObject *asString() const;
     std::string asCppString() const;
@@ -67,6 +70,10 @@ inline bool isNumber(const EvaValue &val)
 {
     return val.type == EvaValueType::NUMBER;
 }
+inline bool isBool(const EvaValue &val)
+{
+    return val.type == EvaValueType::BOOL;
+}
 
 inline bool isObject(const EvaValue &val)
 {
@@ -94,3 +101,4 @@ inline EvaValue allocCode(std::string name)
 }
 
 #define NUMBER(x) EvaValue({.type = EvaValueType::NUMBER, .number = x})
+#define BOOLEAN(x) EvaValue({.type = EvaValueType::BOOL, .boolean = x})

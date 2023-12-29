@@ -23,6 +23,14 @@ do { \
         } \
     } while (0)
 
+#define CHECK_BOOL(evaVal, expected) \
+    do { \
+        if (evaVal.asBool() != expected) { \
+            DIE << __LINE__ << " Test failed, actual: " << evaVal.asBool() \
+                << " expected: " << expected << '\n'; \
+        } \
+    } while (0)
+
 int main()
 {
     EvaVM vm;
@@ -82,6 +90,40 @@ int main()
     (+ "Hello" "Hello")
     )#"),
                  "HelloHello");
+
+    CHECK_BOOL(vm.exec(R"#(
+    true
+    )#"),
+               true);
+
+    CHECK_BOOL(vm.exec(R"#(
+    (> 5 10)
+    )#"),
+               false);
+    CHECK_BOOL(vm.exec(R"#(
+    (>= 5 5)
+    )#"),
+               true);
+    CHECK_BOOL(vm.exec(R"#(
+    (= 5 10)
+    )#"),
+               false);
+    CHECK_BOOL(vm.exec(R"#(
+    (= 5 5)
+    )#"),
+               true);
+    CHECK_BOOL(vm.exec(R"#(
+    (!= 5 10)
+    )#"),
+               true);
+    CHECK_BOOL(vm.exec(R"#(
+    (!= "hello" "world")
+    )#"),
+               true);
+    CHECK_BOOL(vm.exec(R"#(
+    (< "abc" "def")
+    )#"),
+               true);
 
     std::cout << "All tests passed\n";
 }
