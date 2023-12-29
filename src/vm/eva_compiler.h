@@ -2,10 +2,18 @@
 
 #include "../parser/eva_parser.h"
 #include "evavalue.h"
+#include "logger.h"
 #include "opcodes.h"
 
 #include <map>
 #include <string>
+
+#define GEN_BINARY_OP(op) \
+    do { \
+        generate(exp.list[1]); \
+        generate(exp.list[2]); \
+        emit(op); \
+    } while (0)
 
 class EvaCompiler
 {
@@ -28,28 +36,31 @@ private:
     void emit(uint8_t opcode) { co->code.push_back(opcode); }
     void genNumber(const Exp &exp)
     {
-        //co->constants.push_back(NUMBER(exp.number));
         emit(OP_CONST);
         emit(getNumericConstant(exp));
     }
     void genString(const Exp &exp)
     {
-        //        co->constants.push_back(allocString(exp.string));
         emit(OP_CONST);
         emit(getStringConstant(exp));
     }
-    void genSymbol(const std::vector<Exp> &list)
-    {
-        if (list[0].string == "+") {
-            generate(list[1]);
-            generate(list[2]);
-            emit(OP_ADD);
-        }
-    }
+    void genSymbol(const Exp &exp) { DIE << "Unimplemented Sybol"; }
     void genList(const Exp &exp)
     {
         if (exp.list[0].type == ExpType::SYMBOL) {
-            genSymbol(exp.list);
+            auto op = exp.list[0].string;
+            if (op == "+") {
+                GEN_BINARY_OP(OP_ADD);
+            }
+            if (op == "-") {
+                GEN_BINARY_OP(OP_SUB);
+            }
+            if (op == "*") {
+                GEN_BINARY_OP(OP_MUL);
+            }
+            if (op == "/") {
+                GEN_BINARY_OP(OP_DIV);
+            }
         }
     }
 

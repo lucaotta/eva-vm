@@ -65,6 +65,18 @@ int main()
     (+ 1 3)
     )#"),
                  4);
+    CHECK_NUMBER(vm.exec(R"#(
+    (* 2 3)
+    )#"),
+                 6);
+    CHECK_NUMBER(vm.exec(R"#(
+    (- 1.5 3)
+    )#"),
+                 -1.5);
+    CHECK_NUMBER(vm.exec(R"#(
+    (/ 3 2)
+    )#"),
+                 1.5);
 
     CHECK_STRING(vm.exec(R"#(
     (+ "Hello" "Hello")
