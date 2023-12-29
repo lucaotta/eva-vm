@@ -1,8 +1,14 @@
 #include "evavalue.h"
 
-double EvaValue::asNumber() { return this->number; }
+double EvaValue::asNumber()
+{
+    return this->number;
+}
 
-Object *EvaValue::asObject() { return this->object; }
+Object *EvaValue::asObject()
+{
+    return this->object;
+}
 
 StringObject *EvaValue::asString()
 {
@@ -20,4 +26,12 @@ std::string EvaValue::asCppString()
     } else {
         return "";
     }
+}
+
+CodeObject *EvaValue::asCodeObject()
+{
+    if (type == EvaValueType::OBJECT && object->type == ObjectType::CODE) {
+        return (CodeObject *) object;
+    }
+    return nullptr;
 }

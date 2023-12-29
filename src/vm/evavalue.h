@@ -29,6 +29,7 @@ struct EvaValue
     Object *asObject();
     StringObject *asString();
     std::string asCppString();
+    CodeObject *asCodeObject();
 };
 
 struct Object
@@ -80,6 +81,11 @@ inline bool isObjectType(EvaValue val, ObjectType type)
 inline EvaValue allocString(std::string str)
 {
     return EvaValue{.type = EvaValueType::OBJECT, .object = new StringObject(std::move(str))};
+}
+
+inline EvaValue allocCode(std::string name)
+{
+    return EvaValue{.type = EvaValueType::OBJECT, .object = new CodeObject(std::move(name))};
 }
 
 #define NUMBER(x) EvaValue({.type = EvaValueType::NUMBER, .number = x})

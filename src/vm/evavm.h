@@ -34,14 +34,15 @@ public:
 
         EvaCompiler comp;
         co = comp.compile(ast, "main");
-        ip = &co.code[0];
+        ip = &co->code[0];
         return eval();
     }
 
     EvaValue exec(const std::vector<uint8_t> &code, std::vector<EvaValue> constants) {
-        co.constants = std::move(constants);
-        co.code = std::move(code);
-        ip = &co.code[0];
+        co = allocCode("main").asCodeObject();
+        co->constants = std::move(constants);
+        co->code = std::move(code);
+        ip = &co->code[0];
         sp = stack.begin();
         return eval();
     }
@@ -54,7 +55,7 @@ public:
                     return pop();
                 case OP_CONST: {
                     auto constIndex = read_byte();
-                    push(co.constants[constIndex]);
+                    push(co->constants[constIndex]);
                     break;
                 }
                 case OP_ADD: {
@@ -113,7 +114,7 @@ private:
 
     std::unique_ptr<syntax::eva_parser> parser;
 
-    CodeObject co = {"main"};
+    CodeObject *co = {nullptr};
     const uint8_t *ip;
 
     std::array<EvaValue, STACK_LIMIT> stack;

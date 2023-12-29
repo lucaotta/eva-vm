@@ -12,23 +12,28 @@ class EvaCompiler
 public:
     EvaCompiler() = default;
 
-    CodeObject compile(const Value &input, std::string name_tag)
+    CodeObject *compile(const Value &input, std::string name_tag)
     {
-        CodeObject co(std::move(name_tag));
+        co = allocCode(std::move(name_tag)).asCodeObject();
 
         if (input.type == ExpType::NUMBER) {
-            co.constants.push_back(NUMBER(input.number));
-            co.code.push_back(OP_CONST);
-            co.code.push_back(0);
+            co->constants.push_back(NUMBER(input.number));
+            emit(OP_CONST);
+            emit(0);
         }
 
         if (input.type == ExpType::STRING) {
-            co.constants.push_back(allocString(input.string));
-            co.code.push_back(OP_CONST);
-            co.code.push_back(0);
+            co->constants.push_back(allocString(input.string));
+            emit(OP_CONST);
+            emit(0);
         }
 
-        co.code.push_back(OP_HALT);
+        emit(OP_HALT);
         return co;
     }
+
+private:
+    void emit(uint8_t opcode) { co->code.push_back(opcode); }
+
+    CodeObject *co{nullptr};
 };

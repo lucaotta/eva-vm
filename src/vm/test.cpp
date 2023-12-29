@@ -38,5 +38,7 @@ int main() {
     )#"),
                  "Hello world");
 
+    // TODO: check if constants are deduplicated
+
     std::cout << "All tests passed\n";
 }
