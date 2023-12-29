@@ -123,6 +123,18 @@ public:
                 }
                 break;
             }
+            case OP_JMP_IF_FALSE: {
+                auto addr = read_address();
+                if (pop().asBool() == false) {
+                    ip = &co->code[addr];
+                }
+                break;
+            }
+            case OP_JMP: {
+                auto addr = read_address();
+                ip = &co->code[addr];
+                break;
+            }
             default:
                 DIE << "Unknown opcode " << std::hex << opcode;
             }
@@ -133,6 +145,13 @@ private:
     uint8_t read_byte() {
         auto ret = *ip;
         ++ip;
+        return ret;
+    }
+
+    uint16_t read_address()
+    {
+        auto ret = (*ip << 8) | (*(ip + 1));
+        ip += 2;
         return ret;
     }
 

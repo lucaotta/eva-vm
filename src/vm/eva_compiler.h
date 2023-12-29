@@ -79,7 +79,47 @@ private:
             else if (comparison.count(op) > 0) {
                 GEN_COMPARISON_OP(comparison[op]);
             }
+            // (if <test> <true_branch> <false_branch>)
+            else if (op == "if") {
+                generate(exp.list[1]);
+
+                emit(OP_JMP_IF_FALSE);
+
+                // placeholder bytes for 16-bit address
+                emit(0);
+                emit(0);
+
+                // get the address where the placeholder bytes are
+                auto jmpIfFalseAddress = getCurrentOffset() - 2;
+
+                // generate code for true_branch
+                generate(exp.list[2]);
+
+                emit(OP_JMP);
+                // placeholder to jump over false_branch code
+                emit(0);
+                emit(0);
+                auto jmpAddress = getCurrentOffset() - 2;
+
+                auto falseBranchAddress = getCurrentOffset();
+
+                // generate false_branch code
+                generate(exp.list[3]);
+
+                patchAddress(jmpIfFalseAddress, falseBranchAddress);
+                patchAddress(jmpAddress, getCurrentOffset());
+            }
         }
+    }
+
+    uint16_t getCurrentOffset() { return co->code.size(); }
+
+    void patchAddress(uint16_t address, uint16_t value)
+    {
+        // write `value` at `address` in code
+        co->code[address] = uint8_t(value >> 8);
+        address++;
+        co->code[address] = uint8_t(value & 0x00FF);
     }
 
     int getNumericConstant(double value)

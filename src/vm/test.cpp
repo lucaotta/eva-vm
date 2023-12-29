@@ -125,5 +125,15 @@ int main()
     )#"),
                true);
 
+    CHECK_NUMBER(vm.exec(R"#(
+    (if (> 5 10) 1 2)
+    )#"),
+                 2);
+
+    CHECK_NUMBER(vm.exec(R"#(
+    (if (< 5 10) 1 2)
+    )#"),
+                 1);
+
     std::cout << "All tests passed\n";
 }

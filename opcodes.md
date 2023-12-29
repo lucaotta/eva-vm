@@ -13,6 +13,8 @@ ADD
 
 will result in two values popped and one pushed on the stack (in this case 7).
 
+Addresses are two bytes big endian. For example, `OP_JMP` specifies `<high_byte>` and `<low_byte>`.
+
 # Opcode description
 
 ## (0x00) OP_HALT
@@ -63,7 +65,7 @@ will result in two values popped and one pushed on the stack (in this case 7).
 
 **Remarks**: Subtract two values from the stack and push the result
 
-## (0x03) OP_SUB `<comparison>`
+## (0x06) OP_COMP `<comparison>`
 
 **Stack requirements**: pop two
 
@@ -74,3 +76,20 @@ will result in two values popped and one pushed on the stack (in this case 7).
   * 0x0: greater than
   * 0x5: equal
   * 0x6: not equal
+
+## (0x06) OP_JMP_IF_FALSE `<address>`
+
+**Stack requirements**: pop one
+
+**Stack effect**: none
+
+**Remarks**: If the value from the stack is false, jumps to the address specified.
+Addresses are 16 bit values
+
+## (0x06) OP_JMP `<address>`
+
+**Stack requirements**: none
+
+**Stack effect**: none
+
+**Remarks**: Jumps to the address specified.
