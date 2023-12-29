@@ -1,7 +1,12 @@
 #pragma once
 
+#include "logger.h"
 #include <cstdint>
+#include <string>
 
+#define CASE_STR(x) \
+    case OP_##x: \
+        return #x
 
 constexpr uint8_t OP_HALT = 0x00;
 constexpr uint8_t OP_CONST = 0x01;
@@ -21,3 +26,20 @@ enum class ComparisonType : uint8_t {
     EQ,
     NEQ,
 };
+
+inline std::string opcodeToString(uint8_t opcode)
+{
+    switch (opcode) {
+        CASE_STR(HALT);
+        CASE_STR(CONST);
+        CASE_STR(ADD);
+        CASE_STR(SUB);
+        CASE_STR(MUL);
+        CASE_STR(DIV);
+        CASE_STR(COMP);
+        CASE_STR(JMP_IF_FALSE);
+        CASE_STR(JMP);
+    }
+    DIE << "Unhandled opcodeToString" << opcode;
+    return "";
+}

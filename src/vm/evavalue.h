@@ -100,5 +100,19 @@ inline EvaValue allocCode(std::string name)
     return EvaValue{.type = EvaValueType::OBJECT, .object = new CodeObject(std::move(name))};
 }
 
+inline std::string toString(const EvaValue &value)
+{
+    if (isNumber(value)) {
+        return std::to_string(value.asNumber());
+    }
+    if (isString(value)) {
+        return value.asString()->string;
+    }
+    if (isBool(value)) {
+        return std::to_string(value.asBool());
+    }
+    return "";
+}
+
 #define NUMBER(x) EvaValue({.type = EvaValueType::NUMBER, .number = x})
 #define BOOLEAN(x) EvaValue({.type = EvaValueType::BOOL, .boolean = x})

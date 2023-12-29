@@ -3,10 +3,10 @@
 int main() {
     EvaVM vm;
     auto result = vm.exec(R"(
-        (+ "Hello" "world")
+        (< 3 5)
     )");
 
-    log(result.asNumber());
+    std::cout << toString(result) << '\n';
 
     return 0;
 }

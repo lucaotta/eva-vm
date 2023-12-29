@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../disassemble/eva_disassembler.h"
 #include "../parser/eva_parser.h"
 #include "evavalue.h"
 #include "opcodes.h"
@@ -34,6 +35,10 @@ public:
         generate(input);
 
         emit(OP_HALT);
+
+        EvaDisassembler disasm;
+        disasm.disassemble(co);
+
         return co;
     }
 
