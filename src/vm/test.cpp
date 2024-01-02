@@ -165,5 +165,31 @@ int main()
     )#"),
                  8);
 
+    CHECK_NUMBER(vm.exec(R"#(
+    (var i 10)
+    (var count 0)
+    (while (> i 0)
+        (begin
+            (set count (+ count 2))
+            (set i (- i 1))
+        )
+    )
+    count
+    )#"),
+                 20);
+
+    //    CHECK_NUMBER(vm.exec(R"#(
+    //    (begin
+    //        (var count 0)
+    //        (for (var i 0) (< i 10) (set i (+ i 1))
+    //            (begin
+    //                (set count (+ count 2))
+    //            )
+    //        )
+    //        count
+    //    )
+    //    )#"),
+    //                 20);
+
     std::cout << "All tests passed\n";
 }

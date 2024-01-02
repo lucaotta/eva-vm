@@ -8,7 +8,6 @@ enum class EvaValueType {
     NUMBER,
     BOOL,
     OBJECT,
-    POISON,
 };
 
 enum class ObjectType {
@@ -124,11 +123,6 @@ inline bool isString(const EvaValue &val)
     return isObjectType(val, ObjectType::STRING);
 }
 
-inline bool isPoison(const EvaValue &val)
-{
-    return val.type == EvaValueType::POISON;
-}
-
 inline EvaValue allocString(std::string str)
 {
     return EvaValue{.type = EvaValueType::OBJECT, .object = new StringObject(std::move(str))};
@@ -150,11 +144,8 @@ inline std::string toString(const EvaValue &value)
     if (isBool(value)) {
         return std::to_string(value.asBool());
     }
-    if (isPoison(value))
-        return "POISON";
     return "";
 }
 
 #define NUMBER(x) EvaValue({.type = EvaValueType::NUMBER, .number = x})
 #define BOOLEAN(x) EvaValue({.type = EvaValueType::BOOL, .boolean = x})
-#define POISON() EvaValue({.type = EvaValueType::POISON, .boolean = false})

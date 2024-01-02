@@ -183,6 +183,30 @@ private:
                 }
                 exitBlock();
             }
+            // (while <test> <expression)
+            else if (op == "while") {
+                auto loopStart = getCurrentOffset();
+
+                generate(exp.list[1]);
+                emit(OP_JMP_IF_FALSE);
+
+                // placeholder bytes for 16-bit address
+                emit(0);
+                emit(0);
+
+                // get the address where the placeholder bytes are
+                auto loopEndJumpAddress = getCurrentOffset() - 2;
+
+                // generate code for <expression>
+                generate(exp.list[2]);
+
+                emit(OP_JMP);
+                // Go back to loop start
+                emit(0);
+                emit(0);
+                patchAddress(getCurrentOffset() - 2, loopStart);
+                patchAddress(loopEndJumpAddress, getCurrentOffset() + 1);
+            }
         }
     }
 

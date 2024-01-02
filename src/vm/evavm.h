@@ -16,7 +16,9 @@
 #include <string>
 #include <vector>
 
-constexpr size_t STACK_LIMIT = 8;
+// FIXME: use a largish stack because there are ops that don't pop
+// for example each time we load a const
+constexpr size_t STACK_LIMIT = 512;
 
 #define BINARY_OP(bin_op) \
 do { \
@@ -155,8 +157,6 @@ public:
             }
             case OP_POP:
                 pop();
-                // TODO: do only in debug builds
-                *sp = POISON();
                 break;
             case OP_GET_LOCAL: {
                 // Local variables are always stored on the stack
@@ -201,7 +201,7 @@ private:
 
     void push(const EvaValue &v)
     {
-        if ((sp - stack.begin()) > STACK_LIMIT) {
+        if ((sp - stack.begin()) >= STACK_LIMIT) {
             DIE << "Stack overflow";
         }
         *sp = v;
@@ -214,8 +214,6 @@ private:
             DIE << "VM pop: Empty stack";
         }
         sp--;
-        if (isPoison(*sp))
-            DIE << "VM: stack is poison";
         return *sp;
     }
 
@@ -225,6 +223,7 @@ private:
             DIE << "VM: stack too small, requested popN " << n << " but size is "
                 << sp - stack.begin();
         }
+
         sp -= n;
     }
 
@@ -233,8 +232,6 @@ private:
         if (sp - stack.begin() == 0) {
             DIE << "VM peek: Empty stack";
         }
-        if (isPoison(*(sp - 1)))
-            DIE << "VM: Stack is poison";
         return *(sp - 1);
     }
 
