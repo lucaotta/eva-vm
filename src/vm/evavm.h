@@ -64,7 +64,8 @@ public:
 
     EvaValue exec(const std::string &program)
     {
-        auto ast = parser->parse(program);
+        // Add an implicit block so that all list of instructions are ok
+        auto ast = parser->parse("(begin " + program + ")");
 
         EvaCompiler comp(m_globals);
         co = comp.compile(ast, "main");
@@ -87,8 +88,9 @@ public:
         for (;;) {
             unsigned int opcode = read_byte();
             switch (opcode) {
-            case OP_HALT:
+            case OP_HALT: {
                 return pop();
+            }
             case OP_CONST: {
                 auto constIndex = read_byte();
                 push(co->constants[constIndex]);
@@ -151,6 +153,32 @@ public:
                 m_globals->set(index, peek());
                 break;
             }
+            case OP_POP:
+                pop();
+                // TODO: do only in debug builds
+                *sp = POISON();
+                break;
+            case OP_GET_LOCAL: {
+                // Local variables are always stored on the stack
+                auto index = read_byte();
+                push(bp[index]);
+                break;
+            }
+            case OP_SET_LOCAL: {
+                auto index = read_byte();
+                // TODO: at the moment we are working only with a global stack.
+                // It must be changed to support function calls.
+                bp[index] = peek();
+                break;
+            }
+            case OP_SCOPE_EXIT: {
+                auto count = read_byte();
+                // We need to preserve the value of the block on the top of the stack.
+                // Copy it then change the stack pointer
+                *(sp - count - 1) = peek();
+                popN(count);
+                break;
+            }
             default:
                 DIE << "VM: Unknown opcode " << std::hex << opcode;
             }
@@ -183,16 +211,30 @@ private:
     EvaValue pop()
     {
         if (sp - stack.begin() == 0) {
-            DIE << "Empty stack";
+            DIE << "VM pop: Empty stack";
         }
         sp--;
+        if (isPoison(*sp))
+            DIE << "VM: stack is poison";
         return *sp;
     }
+
+    void popN(size_t n)
+    {
+        if (sp - stack.begin() < n) {
+            DIE << "VM: stack too small, requested popN " << n << " but size is "
+                << sp - stack.begin();
+        }
+        sp -= n;
+    }
+
     EvaValue peek()
     {
         if (sp - stack.begin() == 0) {
-            DIE << "Empty stack";
+            DIE << "VM peek: Empty stack";
         }
+        if (isPoison(*(sp - 1)))
+            DIE << "VM: Stack is poison";
         return *(sp - 1);
     }
 
@@ -204,4 +246,5 @@ private:
 
     std::array<EvaValue, STACK_LIMIT> stack;
     EvaValue *sp{stack.begin()};
+    EvaValue *bp{sp};
 };

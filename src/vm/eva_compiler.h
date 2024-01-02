@@ -68,13 +68,17 @@ private:
             emit(OP_CONST);
             emit(getBoolConstant(exp.string == "true" ? true : false));
         }
-        // handle variables
-        else if (m_globals->exists(exp.string)) {
-            const auto idx = m_globals->getGlobalIndex(exp.string);
-
-            if (idx) {
+        // Handle variables
+        else {
+            // Handle local variables first
+            if (const auto localIndex = co->getLocalIndex(exp.string); localIndex) {
+                emit(OP_GET_LOCAL);
+                emit(localIndex.value());
+            }
+            // Then try if it is a global variable
+            else if (const auto globalIndex = m_globals->getGlobalIndex(exp.string); globalIndex) {
                 emit(OP_GET_GLOBAL);
-                emit(idx.value());
+                emit(globalIndex.value());
             } else
                 DIE << "Unkown global variable " << exp.string;
         }
@@ -129,24 +133,55 @@ private:
             }
             // (var <variable <value) Define a variable
             else if (op == "var") {
-                const auto idx = m_globals->define(exp.list[1].string);
-                if (idx) {
-                    generate(exp.list[2]);
-                    emit(OP_SET_GLOBAL);
-                    emit(idx.value());
+                generate(exp.list[2]);
+                const auto &varName = exp.list[1].string;
+                if (!co->isGlobalScope()) {
+                    co->addLocal(varName);
+                    // The trick here is that it's not possible to have something on the stack
+                    // that are not variables, we use this fact to store the index in the bytecode.
+                    // TODO: probably this will need a fix for user defined functions
+                    emit(OP_SET_LOCAL);
+                    emit(co->getLocalIndex(varName).value());
+                } else {
+                    const auto idx = m_globals->define(varName);
+                    if (idx) {
+                        emit(OP_SET_GLOBAL);
+                        emit(idx.value());
+                    }
                 }
             }
             // (set <variable> <value>)
             else if (op == "set") {
-                // Global variables
-                const auto idx = m_globals->getGlobalIndex(exp.list[1].string);
-                if (idx) {
+                const auto &varName = exp.list[1].string;
+                if (auto idx = co->getLocalIndex(varName); idx) {
                     generate(exp.list[2]);
-                    emit(OP_SET_GLOBAL);
+                    emit(OP_SET_LOCAL);
                     emit(idx.value());
+                } else {
+                    // Global variables
+                    const auto index = m_globals->getGlobalIndex(varName);
+                    if (index) {
+                        generate(exp.list[2]);
+                        emit(OP_SET_GLOBAL);
+                        emit(index.value());
+                    }
                 }
-
-                // TODO: local variables
+            }
+            // (begin <expression>)
+            else if (op == "begin") {
+                const auto lastElement = exp.list.size() - 1;
+                co->enterBlock();
+                for (size_t i = 1; i < exp.list.size(); ++i) {
+                    generate(exp.list[i]);
+                    // We have generated a value on the stack, now
+                    // we need to pop it except for the last one
+                    if (i != lastElement
+                        && !(exp.list[i].type == ExpType::LIST
+                             && exp.list[i].list[0].type == ExpType::SYMBOL
+                             && exp.list[i].list[0].string == "var"))
+                        emit(OP_POP);
+                }
+                exitBlock();
             }
         }
     }
@@ -195,6 +230,12 @@ private:
         }
         co->constants.push_back(allocString(value));
         return co->constants.size() - 1;
+    }
+    void exitBlock()
+    {
+        emit(OP_SCOPE_EXIT);
+        emit(co->variableNumberInCurrentBlock());
+        co->exitBlock();
     }
 
     std::map<ExpType, std::function<void(const Exp &)>> handlers{

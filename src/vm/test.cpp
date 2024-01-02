@@ -138,14 +138,32 @@ int main()
                  1);
 
     CHECK_NUMBER(vm.exec(R"#(
-    (var x (+ PI 7))
+        (var x (+ PI 7))
     )#"),
                  10.1415);
 
     CHECK_NUMBER(vm.exec(R"#(
-    (set PI 3)
+        (+ 1 1)
+        (+ 2 2)
+        (+ 3 3)
     )#"),
-                 3);
+                 6);
+
+    CHECK_NUMBER(vm.exec(R"#(
+        (var z 10)
+        (- z 11)
+    )#"),
+                 -1);
+
+    CHECK_NUMBER(vm.exec(R"#(
+        (set x 5)
+        (begin
+            (var x 100)
+            (set x (+ 3 5))
+            x
+        )
+    )#"),
+                 8);
 
     std::cout << "All tests passed\n";
 }

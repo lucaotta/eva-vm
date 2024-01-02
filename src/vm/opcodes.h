@@ -19,6 +19,10 @@ constexpr uint8_t OP_JMP_IF_FALSE = 0x07;
 constexpr uint8_t OP_JMP = 0x08;
 constexpr uint8_t OP_GET_GLOBAL = 0x09;
 constexpr uint8_t OP_SET_GLOBAL = 0x0A;
+constexpr uint8_t OP_POP = 0x0B;
+constexpr uint8_t OP_SET_LOCAL = 0x0C;
+constexpr uint8_t OP_GET_LOCAL = 0x0D;
+constexpr uint8_t OP_SCOPE_EXIT = 0x10;
 
 enum class ComparisonType : uint8_t {
     GT,
@@ -43,6 +47,10 @@ inline std::string opcodeToString(uint8_t opcode)
         CASE_STR(JMP);
         CASE_STR(GET_GLOBAL);
         CASE_STR(SET_GLOBAL);
+        CASE_STR(POP);
+        CASE_STR(SET_LOCAL);
+        CASE_STR(GET_LOCAL);
+        CASE_STR(SCOPE_EXIT);
     }
     DIE << "Unhandled opcodeToString " << std::hex << int(opcode);
     return "";

@@ -21,6 +21,7 @@ public:
         while (offset < co->code.size()) {
             offset = disassembleInstruction(co, offset);
         }
+        std::cout << std::endl;
     }
 
 private:
@@ -34,6 +35,7 @@ private:
         case OP_SUB:
         case OP_MUL:
         case OP_DIV:
+        case OP_POP:
             break;
         case OP_CONST: {
             auto index = co->code[++offset];
@@ -41,6 +43,7 @@ private:
             break;
         }
         case OP_COMP:
+        case OP_SCOPE_EXIT:
             printf("%4d", co->code[++offset]);
             break;
         case OP_JMP: {
@@ -63,6 +66,12 @@ private:
         case OP_SET_GLOBAL: {
             auto index = co->code[++offset];
             printf("%4d (%s)", index, m_globals->nameForIndex(index).c_str());
+            break;
+        }
+        case OP_SET_LOCAL:
+        case OP_GET_LOCAL: {
+            auto index = co->code[++offset];
+            printf("%4d (%s)", index, co->locals[index].name.c_str());
             break;
         }
         }
