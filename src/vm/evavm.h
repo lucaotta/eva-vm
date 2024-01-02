@@ -18,7 +18,7 @@
 
 // FIXME: use a largish stack because there are ops that don't pop
 // for example each time we load a const
-constexpr size_t STACK_LIMIT = 512;
+constexpr size_t STACK_LIMIT = 128;
 
 #define BINARY_OP(bin_op) \
 do { \
@@ -72,6 +72,7 @@ public:
         EvaCompiler comp(m_globals);
         co = comp.compile(ast, "main");
         ip = &co->code[0];
+        sp = stack.begin();
         return eval();
     }
 
