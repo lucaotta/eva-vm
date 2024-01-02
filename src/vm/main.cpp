@@ -3,7 +3,7 @@
 int main() {
     EvaVM vm;
     auto result = vm.exec(R"(
-        (< 3 5)
+        (set PI (+ PI 7))
     )");
 
     std::cout << toString(result) << '\n';

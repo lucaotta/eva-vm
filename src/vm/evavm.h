@@ -7,6 +7,7 @@
 #include "../parser/eva_parser.h"
 #include "eva_compiler.h"
 #include "evavalue.h"
+#include "globals.h"
 #include "logger.h"
 #include "opcodes.h"
 
@@ -54,13 +55,18 @@ class EvaVM
 {
 public:
     EvaVM()
-        : parser(std::make_unique<syntax::eva_parser>()){};
+        : parser(std::make_unique<syntax::eva_parser>())
+        , m_globals(std::make_shared<Globals>())
+    {
+        const auto idx = m_globals->define("PI");
+        m_globals->set(idx.value(), NUMBER(3.1415));
+    };
 
     EvaValue exec(const std::string &program)
     {
         auto ast = parser->parse(program);
 
-        EvaCompiler comp;
+        EvaCompiler comp(m_globals);
         co = comp.compile(ast, "main");
         ip = &co->code[0];
         return eval();
@@ -135,8 +141,18 @@ public:
                 ip = &co->code[addr];
                 break;
             }
+            case OP_GET_GLOBAL: {
+                auto index = read_byte();
+                push(m_globals->get(index));
+                break;
+            }
+            case OP_SET_GLOBAL: {
+                auto index = read_byte();
+                m_globals->set(index, peek());
+                break;
+            }
             default:
-                DIE << "Unknown opcode " << std::hex << opcode;
+                DIE << "VM: Unknown opcode " << std::hex << opcode;
             }
         }
     }
@@ -155,7 +171,8 @@ private:
         return ret;
     }
 
-    void push(const EvaValue &v) {
+    void push(const EvaValue &v)
+    {
         if ((sp - stack.begin()) > STACK_LIMIT) {
             DIE << "Stack overflow";
         }
@@ -163,15 +180,24 @@ private:
         sp++;
     }
 
-    EvaValue pop() {
+    EvaValue pop()
+    {
         if (sp - stack.begin() == 0) {
             DIE << "Empty stack";
         }
         sp--;
         return *sp;
     }
+    EvaValue peek()
+    {
+        if (sp - stack.begin() == 0) {
+            DIE << "Empty stack";
+        }
+        return *(sp - 1);
+    }
 
     std::unique_ptr<syntax::eva_parser> parser;
+    std::shared_ptr<Globals> m_globals;
 
     CodeObject *co = {nullptr};
     const uint8_t *ip;

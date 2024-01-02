@@ -3,6 +3,7 @@
 #include "../disassemble/eva_disassembler.h"
 #include "../parser/eva_parser.h"
 #include "evavalue.h"
+#include "globals.h"
 #include "opcodes.h"
 
 #include <map>
@@ -26,7 +27,9 @@
 class EvaCompiler
 {
 public:
-    EvaCompiler() = default;
+    EvaCompiler(std::shared_ptr<Globals> g)
+        : m_globals(g)
+    {}
 
     CodeObject *compile(const Value &input, std::string name_tag)
     {
@@ -36,7 +39,7 @@ public:
 
         emit(OP_HALT);
 
-        EvaDisassembler disasm;
+        EvaDisassembler disasm(m_globals);
         disasm.disassemble(co);
 
         return co;
@@ -64,6 +67,16 @@ private:
         if (exp.string == "true" || exp.string == "false") {
             emit(OP_CONST);
             emit(getBoolConstant(exp.string == "true" ? true : false));
+        }
+        // handle variables
+        else if (m_globals->exists(exp.string)) {
+            const auto idx = m_globals->getGlobalIndex(exp.string);
+
+            if (idx) {
+                emit(OP_GET_GLOBAL);
+                emit(idx.value());
+            } else
+                DIE << "Unkown global variable " << exp.string;
         }
     }
     void genList(const Exp &exp)
@@ -113,6 +126,27 @@ private:
 
                 patchAddress(jmpIfFalseAddress, falseBranchAddress);
                 patchAddress(jmpAddress, getCurrentOffset());
+            }
+            // (var <variable <value) Define a variable
+            else if (op == "var") {
+                const auto idx = m_globals->define(exp.list[1].string);
+                if (idx) {
+                    generate(exp.list[2]);
+                    emit(OP_SET_GLOBAL);
+                    emit(idx.value());
+                }
+            }
+            // (set <variable> <value>)
+            else if (op == "set") {
+                // Global variables
+                const auto idx = m_globals->getGlobalIndex(exp.list[1].string);
+                if (idx) {
+                    generate(exp.list[2]);
+                    emit(OP_SET_GLOBAL);
+                    emit(idx.value());
+                }
+
+                // TODO: local variables
             }
         }
     }
@@ -183,6 +217,7 @@ private:
     };
 
     CodeObject *co{nullptr};
+    std::shared_ptr<Globals> m_globals;
     static std::map<std::string, ComparisonType> comparison;
 };
 

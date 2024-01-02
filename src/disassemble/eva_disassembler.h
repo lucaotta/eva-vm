@@ -1,14 +1,17 @@
 #pragma once
 #include "../vm/evavalue.h"
+#include "../vm/globals.h"
 #include "../vm/opcodes.h"
 
 #include <cstdio>
 #include <iostream>
+#include <memory>
 
 class EvaDisassembler
 {
 public:
-    EvaDisassembler() = default;
+    EvaDisassembler(std::shared_ptr<Globals> g)
+        : m_globals(g){};
 
     void disassemble(CodeObject *co)
     {
@@ -52,9 +55,21 @@ private:
             printf("%04X", address);
             break;
         }
+        case OP_GET_GLOBAL: {
+            auto index = co->code[++offset];
+            printf("%4d (%s)", index, toString(m_globals->get(index)).c_str());
+            break;
+        }
+        case OP_SET_GLOBAL: {
+            auto index = co->code[++offset];
+            printf("%4d (%s)", index, m_globals->nameForIndex(index).c_str());
+            break;
+        }
         }
         printf("\n");
         offset++;
         return offset;
     }
+
+    std::shared_ptr<Globals> m_globals;
 };

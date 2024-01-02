@@ -56,14 +56,16 @@ int main()
                  "Hello world");
 
     {
-        EvaCompiler c;
+        auto g = std::make_shared<Globals>();
+        EvaCompiler c(g);
         syntax::eva_parser p;
         std::unique_ptr<CodeObject> co{c.compile(p.parse(R"#((+ 1 1))#"), "test")};
         CHECK_CPPNUMBER(co->constants.size(), 1);
     }
 
     {
-        EvaCompiler c;
+        auto g = std::make_shared<Globals>();
+        EvaCompiler c(g);
         syntax::eva_parser p;
         std::unique_ptr<CodeObject> co{c.compile(p.parse(R"#((+ "hello" "hello"))#"), "test")};
         CHECK_CPPNUMBER(co->constants.size(), 1);
@@ -134,6 +136,16 @@ int main()
     (if (< 5 10) 1 2)
     )#"),
                  1);
+
+    CHECK_NUMBER(vm.exec(R"#(
+    (var x (+ PI 7))
+    )#"),
+                 10.1415);
+
+    CHECK_NUMBER(vm.exec(R"#(
+    (set PI 3)
+    )#"),
+                 3);
 
     std::cout << "All tests passed\n";
 }
