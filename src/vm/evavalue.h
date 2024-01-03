@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -13,11 +14,15 @@ enum class EvaValueType {
 enum class ObjectType {
     STRING,
     CODE,
+    NATIVE,
 };
+
+using NativeFn = std::function<void()>;
 
 struct Object;
 struct StringObject;
 struct CodeObject;
+struct NativeFunction;
 
 struct EvaValue
 {
@@ -34,6 +39,7 @@ struct EvaValue
     StringObject *asString() const;
     std::string asCppString() const;
     CodeObject *asCodeObject() const;
+    NativeFunction *asNativeFunction() const;
 };
 
 struct Object
@@ -99,6 +105,19 @@ struct CodeObject : public Object
     std::vector<LocalVar> locals;
 };
 
+struct NativeFunction : public Object
+{
+    NativeFunction(NativeFn fn, std::string name, int arity)
+        : Object(ObjectType::NATIVE)
+        , fn(std::move(fn))
+        , name(std::move(name))
+        , arity(arity)
+    {}
+    NativeFn fn;
+    std::string name;
+    int arity{0};
+};
+
 inline bool isNumber(const EvaValue &val)
 {
     return val.type == EvaValueType::NUMBER;
@@ -123,6 +142,11 @@ inline bool isString(const EvaValue &val)
     return isObjectType(val, ObjectType::STRING);
 }
 
+inline bool isNative(const EvaValue &val)
+{
+    return isObjectType(val, ObjectType::NATIVE);
+}
+
 inline EvaValue allocString(std::string str)
 {
     return EvaValue{.type = EvaValueType::OBJECT, .object = new StringObject(std::move(str))};
@@ -131,6 +155,11 @@ inline EvaValue allocString(std::string str)
 inline EvaValue allocCode(std::string name)
 {
     return EvaValue{.type = EvaValueType::OBJECT, .object = new CodeObject(std::move(name))};
+}
+
+inline EvaValue allocNative(std::function<void()> fn, std::string name, int arity)
+{
+    return EvaValue{.type = EvaValueType::OBJECT, .object = new NativeFunction(fn, name, arity)};
 }
 
 inline std::string toString(const EvaValue &value)
@@ -143,6 +172,9 @@ inline std::string toString(const EvaValue &value)
     }
     if (isBool(value)) {
         return std::to_string(value.asBool());
+    }
+    if (isNative(value)) {
+        return "NATIVE " + value.asNativeFunction()->name;
     }
     return "";
 }

@@ -40,3 +40,11 @@ CodeObject *EvaValue::asCodeObject() const
     }
     return nullptr;
 }
+
+NativeFunction *EvaValue::asNativeFunction() const
+{
+    if (type == EvaValueType::OBJECT && object->type == ObjectType::NATIVE) {
+        return (NativeFunction *) object;
+    }
+    return nullptr;
+}

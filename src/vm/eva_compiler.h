@@ -211,6 +211,20 @@ private:
                 patchAddress(getCurrentOffset() - 2, loopStart);
                 patchAddress(loopEndJumpAddress, getCurrentOffset() + 1);
             }
+            // Function calls:
+            // (square 2)
+            else {
+                // Push the function on the stack
+                generate(exp.list[0]);
+
+                // evaluate all parameters
+                for (int i = 1; i < exp.list.size(); i++) {
+                    generate(exp.list[i]);
+                }
+
+                emit(OP_CALL);
+                emit(exp.list.size() - 1);
+            }
         }
     }
 

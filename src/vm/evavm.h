@@ -60,8 +60,7 @@ public:
         : parser(std::make_unique<syntax::eva_parser>())
         , m_globals(std::make_shared<Globals>())
     {
-        const auto idx = m_globals->define("PI");
-        m_globals->set(idx.value(), NUMBER(3.1415));
+        setGlobalVariables();
     };
 
     EvaValue exec(const std::string &program)
@@ -90,8 +89,8 @@ public:
     {
         for (;;) {
             auto opcode = read_byte();
-            std::cout << "current opcode " << opcodeToString(opcode) << '\n';
-            printStack();
+            //            std::cout << "current opcode " << opcodeToString(opcode) << '\n';
+            //            printStack();
             switch (opcode) {
             case OP_HALT: {
                 return pop();
@@ -155,7 +154,7 @@ public:
             }
             case OP_SET_GLOBAL: {
                 auto index = read_byte();
-                m_globals->set(index, peek());
+                m_globals->set(index, peek(0));
                 break;
             }
             case OP_POP:
@@ -171,15 +170,28 @@ public:
                 auto index = read_byte();
                 // TODO: at the moment we are working only with a global stack.
                 // It must be changed to support function calls.
-                bp[index] = peek();
+                bp[index] = peek(0);
                 break;
             }
             case OP_SCOPE_EXIT: {
                 auto count = read_byte();
                 // We need to preserve the value of the block on the top of the stack.
                 // Copy it then change the stack pointer
-                *(sp - count - 1) = peek();
+                *(sp - count - 1) = peek(0);
                 popN(count);
+                break;
+            }
+            case OP_CALL: {
+                auto args = read_byte();
+                auto fn = peek(args);
+                if (isNative(fn)) {
+                    fn.asNativeFunction()->fn();
+                    auto result = pop();
+                    popN(args + 1);
+                    push(result);
+                }
+
+                // TODO: handle user defined functions
                 break;
             }
             default:
@@ -240,12 +252,12 @@ private:
         sp -= n;
     }
 
-    EvaValue peek()
+    EvaValue peek(size_t number)
     {
         if (sp - stack.begin() == 0) {
             DIE << "VM peek: Empty stack";
         }
-        return *(sp - 1);
+        return *(sp - 1 - number);
     }
 
     std::unique_ptr<syntax::eva_parser> parser;
@@ -257,4 +269,15 @@ private:
     std::array<EvaValue, STACK_LIMIT> stack;
     EvaValue *sp{stack.begin()};
     EvaValue *bp{sp};
+    void setGlobalVariables()
+    {
+        m_globals->addConst("PI", NUMBER(3.1415));
+        m_globals->addNativeFunction(
+            "square",
+            [&]() {
+                auto x = peek(0).asNumber();
+                push(NUMBER(x * x));
+            },
+            1);
+    }
 };

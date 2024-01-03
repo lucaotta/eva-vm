@@ -44,6 +44,7 @@ private:
         }
         case OP_COMP:
         case OP_SCOPE_EXIT:
+        case OP_CALL:
             printf("%4d", co->code[++offset]);
             break;
         case OP_JMP: {

@@ -51,6 +51,20 @@ public:
 
     bool exists(const std::string &name) { return find(name) != m_values.end(); }
 
+    void addConst(const std::string &name, EvaValue v)
+    {
+        if (exists(name))
+            return;
+        m_values.push_back({name, v});
+    }
+
+    void addNativeFunction(const std::string &name, std::function<void()> fn, int arity)
+    {
+        if (exists(name))
+            return;
+        m_values.push_back({name, allocNative(fn, name, arity)});
+    }
+
 private:
     struct Variable
     {

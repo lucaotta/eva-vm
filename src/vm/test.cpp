@@ -178,6 +178,11 @@ int main()
     )#"),
                  20);
 
+    CHECK_NUMBER(vm.exec(R"#(
+    (square 8)
+    )#"),
+                 64);
+
     //    CHECK_NUMBER(vm.exec(R"#(
     //    (begin
     //        (var count 0)
