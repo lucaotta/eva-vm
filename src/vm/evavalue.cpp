@@ -48,3 +48,11 @@ NativeFunction *EvaValue::asNativeFunction() const
     }
     return nullptr;
 }
+
+FunctionObject *EvaValue::asFunction() const
+{
+    if (type == EvaValueType::OBJECT && object->type == ObjectType::FUNCTION) {
+        return (FunctionObject *) object;
+    }
+    return nullptr;
+}

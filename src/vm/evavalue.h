@@ -15,6 +15,7 @@ enum class ObjectType {
     STRING,
     CODE,
     NATIVE,
+    FUNCTION,
 };
 
 using NativeFn = std::function<void()>;
@@ -23,6 +24,7 @@ struct Object;
 struct StringObject;
 struct CodeObject;
 struct NativeFunction;
+struct FunctionObject;
 
 struct EvaValue
 {
@@ -40,6 +42,7 @@ struct EvaValue
     std::string asCppString() const;
     CodeObject *asCodeObject() const;
     NativeFunction *asNativeFunction() const;
+    FunctionObject *asFunction() const;
 };
 
 struct Object
@@ -69,19 +72,23 @@ struct LocalVar
 
 struct CodeObject : public Object
 {
-    CodeObject(std::string name)
+    CodeObject(std::string name, int arity)
         : Object(ObjectType::CODE)
         , name(std::move(name))
+        , arity(arity)
     {}
 
     void enterBlock() { currentLevel++; }
     void exitBlock() { currentLevel--; }
     bool isGlobalScope() { return name == "main" && currentLevel == 1; }
     void addLocal(const std::string &name) { locals.push_back({name, currentLevel}); }
+    void addConst(EvaValue val) { constants.push_back(val); }
     std::optional<size_t> getLocalIndex(const std::string &name)
     {
-        for (int i = 0; i < locals.size(); ++i) {
-            if (locals[i].name == name && locals[i].blockLevel == currentLevel)
+        // Start from the end, which are the latest defined locals.
+        // Accept all variable names that have been defined in outer blocks
+        for (int i = locals.size(); i >= 0; --i) {
+            if (locals[i].name == name && locals[i].blockLevel <= currentLevel)
                 return i;
         }
         return {};
@@ -103,6 +110,7 @@ struct CodeObject : public Object
     std::vector<EvaValue> constants;
     int currentLevel{0};
     std::vector<LocalVar> locals;
+    int arity{0};
 };
 
 struct NativeFunction : public Object
@@ -116,6 +124,15 @@ struct NativeFunction : public Object
     NativeFn fn;
     std::string name;
     int arity{0};
+};
+
+struct FunctionObject : public Object
+{
+    FunctionObject(CodeObject *co)
+        : Object(ObjectType::FUNCTION)
+        , co(co)
+    {}
+    CodeObject *co;
 };
 
 inline bool isNumber(const EvaValue &val)
@@ -147,19 +164,29 @@ inline bool isNative(const EvaValue &val)
     return isObjectType(val, ObjectType::NATIVE);
 }
 
+inline bool isFunction(const EvaValue &val)
+{
+    return isObjectType(val, ObjectType::FUNCTION);
+}
+
 inline EvaValue allocString(std::string str)
 {
     return EvaValue{.type = EvaValueType::OBJECT, .object = new StringObject(std::move(str))};
 }
 
-inline EvaValue allocCode(std::string name)
+inline EvaValue allocCode(std::string name, int arity)
 {
-    return EvaValue{.type = EvaValueType::OBJECT, .object = new CodeObject(std::move(name))};
+    return EvaValue{.type = EvaValueType::OBJECT, .object = new CodeObject(std::move(name), arity)};
 }
 
 inline EvaValue allocNative(std::function<void()> fn, std::string name, int arity)
 {
     return EvaValue{.type = EvaValueType::OBJECT, .object = new NativeFunction(fn, name, arity)};
+}
+
+inline EvaValue allocFunction(CodeObject *co)
+{
+    return EvaValue{.type = EvaValueType::OBJECT, .object = new FunctionObject(co)};
 }
 
 inline std::string toString(const EvaValue &value)
@@ -174,7 +201,12 @@ inline std::string toString(const EvaValue &value)
         return std::to_string(value.asBool());
     }
     if (isNative(value)) {
-        return "NATIVE " + value.asNativeFunction()->name;
+        return "NATIVE " + value.asNativeFunction()->name + "/"
+               + std::to_string(value.asNativeFunction()->arity);
+    }
+    if (isFunction(value)) {
+        return "FUNCTION " + value.asFunction()->co->name + "/"
+               + std::to_string(value.asFunction()->co->arity);
     }
     return "";
 }

@@ -33,14 +33,17 @@ public:
 
     CodeObject *compile(const Value &input, std::string name_tag)
     {
-        co = allocCode(std::move(name_tag)).asCodeObject();
+        co = allocCode(std::move(name_tag), 0).asCodeObject();
+        addCodeObject(co);
 
         generate(input);
 
         emit(OP_HALT);
 
         EvaDisassembler disasm(m_globals);
-        disasm.disassemble(co);
+        for (auto co : m_codeObjects) {
+            disasm.disassemble(co);
+        }
 
         return co;
     }
@@ -80,7 +83,7 @@ private:
                 emit(OP_GET_GLOBAL);
                 emit(globalIndex.value());
             } else
-                DIE << "Unkown global variable " << exp.string;
+                DIE << "[Compiler] Unkown global variable " << exp.string;
         }
     }
     void genList(const Exp &exp)
@@ -168,6 +171,58 @@ private:
                         emit(index.value());
                     }
                 }
+            }
+            // (def <name> (<parameters>) <expressions>)
+            else if (op == "def") {
+                auto name = exp.list[1].string;
+                auto parameters = exp.list[2].list;
+                auto arity = parameters.size();
+                auto body = exp.list[3];
+
+                // Allocate code object
+                auto prevCo = co;
+                auto newCode = allocCode(name, parameters.size());
+                prevCo->addConst(newCode);
+                co = newCode.asCodeObject();
+
+                addCodeObject(co);
+
+                co->addLocal(name);
+                for (int i = 0; i < parameters.size(); ++i) {
+                    co->addLocal(parameters[i].string);
+                }
+
+                // generate code
+                generate(body);
+
+                // In case we have a body with a single expression, we need
+                // to generate the instruction to pop all the parameters and
+                // the function name
+                if (!isBlock(body)) {
+                    emit(OP_SCOPE_EXIT);
+                    emit(arity + 1);
+                }
+
+                emit(OP_RETURN);
+
+                auto fn = allocFunction(newCode.asCodeObject());
+
+                co = prevCo;
+                co->addConst(fn);
+
+                emit(OP_CONST);
+                emit(co->constants.size() - 1);
+
+                if (co->isGlobalScope()) {
+                    m_globals->define(name);
+                    emit(OP_SET_GLOBAL);
+                    emit(m_globals->getGlobalIndex(name).value());
+                } else {
+                    co->addLocal(name);
+                    emit(OP_SET_LOCAL);
+                    emit(co->getLocalIndex(name).value());
+                }
+
             }
             // (begin <expression>)
             else if (op == "begin") {
@@ -277,20 +332,27 @@ private:
     void exitBlock()
     {
         auto varsCount = co->variableNumberInCurrentBlock();
-        if (varsCount > 0) {
+        if (varsCount > 0 || co->arity > 0) {
             emit(OP_SCOPE_EXIT);
+            if (isFunctionBody()) {
+                varsCount += co->arity + 1;
+            }
             emit(varsCount);
         }
         co->exitBlock();
     }
 
+    bool isFunctionBody() { return co->name != "main" && co->currentLevel == 1; }
+
     bool isVarDeclaration(Exp exp) { return isTagList(exp, "var"); }
+    bool isBlock(Exp exp) { return isTagList(exp, "begin"); }
 
     bool isTagList(Exp exp, const std::string &tag)
     {
         return exp.type == ExpType::LIST && exp.list[0].type == ExpType::SYMBOL
                && exp.list[0].string == tag;
     }
+    void addCodeObject(CodeObject *) { m_codeObjects.push_back(co); };
 
     std::map<ExpType, std::function<void(const Exp &)>> handlers{
         {
@@ -313,6 +375,7 @@ private:
 
     CodeObject *co{nullptr};
     std::shared_ptr<Globals> m_globals;
+    std::vector<CodeObject *> m_codeObjects;
     static std::map<std::string, ComparisonType> comparison;
 };
 

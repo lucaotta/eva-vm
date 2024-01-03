@@ -24,6 +24,7 @@ constexpr uint8_t OP_SET_LOCAL = 0x0C;
 constexpr uint8_t OP_GET_LOCAL = 0x0D;
 constexpr uint8_t OP_SCOPE_EXIT = 0x10;
 constexpr uint8_t OP_CALL = 0x11;
+constexpr uint8_t OP_RETURN = 0x12;
 
 enum class ComparisonType : uint8_t {
     GT,
@@ -53,6 +54,7 @@ inline std::string opcodeToString(uint8_t opcode)
         CASE_STR(GET_LOCAL);
         CASE_STR(SCOPE_EXIT);
         CASE_STR(CALL);
+        CASE_STR(RETURN);
     }
     DIE << "Unhandled opcodeToString " << std::hex << int(opcode);
     return "";

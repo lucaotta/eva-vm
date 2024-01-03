@@ -77,7 +77,7 @@ public:
 
     EvaValue exec(const std::vector<uint8_t> &code, std::vector<EvaValue> constants)
     {
-        co = allocCode("main").asCodeObject();
+        co = allocCode("main", 0).asCodeObject();
         co->constants = std::move(constants);
         co->code = std::move(code);
         ip = &co->code[0];
