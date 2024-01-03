@@ -139,9 +139,11 @@ private:
                     co->addLocal(varName);
                     // The trick here is that it's not possible to have something on the stack
                     // that are not variables, we use this fact to store the index in the bytecode.
-                    // TODO: probably this will need a fix for user defined functions
-                    emit(OP_SET_LOCAL);
-                    emit(co->getLocalIndex(varName).value());
+
+                    // Actually we don't need to emit a store when declaring the variable
+                    // because the value is already there
+                    //                    emit(OP_SET_LOCAL);
+                    //                    emit(co->getLocalIndex(varName).value());
                 } else {
                     const auto idx = m_globals->define(varName);
                     if (idx) {
@@ -179,6 +181,9 @@ private:
                     // we need to pop it except for the last one
                     if (i != lastElement && !isLocalDeclaration)
                         emit(OP_POP);
+                    if (i == lastElement && isLocalDeclaration)
+                        DIE << "[Compiler] Blocks must end with a value, not a variable "
+                               "declaration";
                 }
                 exitBlock();
             }

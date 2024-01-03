@@ -89,8 +89,9 @@ public:
     EvaValue eval()
     {
         for (;;) {
+            auto opcode = read_byte();
+            std::cout << "current opcode " << opcodeToString(opcode) << '\n';
             printStack();
-            unsigned int opcode = read_byte();
             switch (opcode) {
             case OP_HALT: {
                 return pop();

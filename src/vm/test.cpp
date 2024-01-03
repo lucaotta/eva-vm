@@ -139,6 +139,7 @@ int main()
 
     CHECK_NUMBER(vm.exec(R"#(
         (var x (+ PI 7))
+        x
     )#"),
                  10.1415);
 
@@ -160,7 +161,6 @@ int main()
         (begin
             (var x 100)
             (set x (+ 3 5))
-            x
         )
     )#"),
                  8);
