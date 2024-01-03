@@ -89,6 +89,7 @@ public:
     EvaValue eval()
     {
         for (;;) {
+            printStack();
             unsigned int opcode = read_byte();
             switch (opcode) {
             case OP_HALT: {
@@ -187,6 +188,16 @@ public:
     }
 
 private:
+    void printStack()
+    {
+        auto csp = sp - 1;
+        std::cout << "---- STACK ----\n";
+        while (csp >= stack.begin()) {
+            std::cout << toString(*csp) << "\n";
+            csp--;
+        }
+        std::cout << std::endl;
+    }
     uint8_t read_byte() {
         auto ret = *ip;
         ++ip;
