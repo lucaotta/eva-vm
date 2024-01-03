@@ -203,6 +203,17 @@ int main()
     )#"),
                  120);
 
+    CHECK_NUMBER(vm.exec(R"#(
+    (def innerFunction (x)
+        (begin
+            (def sum (a b) (+ a b))
+            (sum x 10)
+        )
+    )
+    (innerFunction 10)
+    )#"),
+                 20);
+
     //    CHECK_NUMBER(vm.exec(R"#(
     //    (begin
     //        (var count 0)

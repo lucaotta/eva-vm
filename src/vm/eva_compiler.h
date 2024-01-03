@@ -257,9 +257,11 @@ private:
                     generate(exp.list[i]);
                     const bool isLocalDeclaration = isVarDeclaration(exp.list[i])
                                                     && !co->isGlobalScope();
+                    const bool isFunction = isFunctionDeclaration(exp.list[i])
+                                            && !co->isGlobalScope();
                     // We have generated a value on the stack, now
                     // we need to pop it except for the last one
-                    if (i != lastElement && !isLocalDeclaration)
+                    if (i != lastElement && !(isLocalDeclaration || isFunction))
                         emit(OP_POP);
                     if (i == lastElement && isLocalDeclaration)
                         DIE << "[Compiler] Blocks must end with a value, not a variable "
@@ -370,6 +372,7 @@ private:
     bool isFunctionBody() { return co->name != "main" && co->currentLevel == 1; }
 
     bool isVarDeclaration(Exp exp) { return isTagList(exp, "var"); }
+    const bool isFunctionDeclaration(Exp exp) { return isTagList(exp, "def"); };
     bool isBlock(Exp exp) { return isTagList(exp, "begin"); }
 
     bool isTagList(Exp exp, const std::string &tag)
