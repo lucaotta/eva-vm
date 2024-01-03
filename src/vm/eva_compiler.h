@@ -48,7 +48,24 @@ public:
         return co;
     }
 
-    void generate(Exp exp) { handlers[exp.type](exp); }
+    void generate(Exp exp)
+    {
+        // Use a switch because it makes debugging easier
+        switch (exp.type) {
+        case ExpType::NUMBER:
+            genNumber(exp);
+            break;
+        case ExpType::STRING:
+            genString(exp);
+            break;
+        case ExpType::SYMBOL:
+            genSymbol(exp);
+            break;
+        case ExpType::LIST:
+            genList(exp);
+            break;
+        }
+    }
 
 private:
     void emit(uint8_t opcode) { co->code.push_back(opcode); }
@@ -353,25 +370,6 @@ private:
                && exp.list[0].string == tag;
     }
     void addCodeObject(CodeObject *) { m_codeObjects.push_back(co); };
-
-    std::map<ExpType, std::function<void(const Exp &)>> handlers{
-        {
-            ExpType::NUMBER,
-            [this](const Exp &e) { genNumber(e); },
-        },
-        {
-            ExpType::STRING,
-            [this](const Exp &e) { genString(e); },
-        },
-        {
-            ExpType::SYMBOL,
-            [this](const Exp &e) { genSymbol(e); },
-        },
-        {
-            ExpType::LIST,
-            [this](const Exp &e) { genList(e); },
-        },
-    };
 
     CodeObject *co{nullptr};
     std::shared_ptr<Globals> m_globals;
