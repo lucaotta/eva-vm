@@ -60,7 +60,7 @@ private:
         }
         case OP_GET_GLOBAL: {
             auto index = co->code[++offset];
-            printf("%4d (%s)", index, toString(m_globals->get(index)).c_str());
+            printf("%4d (%s)", index, m_globals->nameForIndex(index).c_str());
             break;
         }
         case OP_SET_GLOBAL: {
