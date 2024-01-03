@@ -183,6 +183,26 @@ int main()
     )#"),
                  64);
 
+    CHECK_NUMBER(vm.exec(R"#(
+    (def foo (a b)
+        (begin
+            (var x 10)
+            (+ a b)
+        ))
+    (foo 2 3)
+    )#"),
+                 5);
+
+    CHECK_NUMBER(vm.exec(R"#(
+    (def factorial (x)
+        (if (= x 1)
+            1
+            (* x (factorial(- x 1)))
+        ))
+    (factorial 5)
+    )#"),
+                 120);
+
     //    CHECK_NUMBER(vm.exec(R"#(
     //    (begin
     //        (var count 0)

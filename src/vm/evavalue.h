@@ -87,7 +87,7 @@ struct CodeObject : public Object
     {
         // Start from the end, which are the latest defined locals.
         // Accept all variable names that have been defined in outer blocks
-        for (int i = locals.size(); i >= 0; --i) {
+        for (int i = locals.size(); i > 0; --i) {
             if (locals[i].name == name && locals[i].blockLevel <= currentLevel)
                 return i;
         }

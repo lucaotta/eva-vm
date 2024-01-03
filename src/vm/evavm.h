@@ -190,8 +190,23 @@ public:
                     popN(args + 1);
                     push(result);
                 }
+                // User defined functions
+                else {
+                    auto callee = fn.asFunction();
+                    frames.push(StackFrame{.ip = ip, .bp = bp, .co = co});
 
-                // TODO: handle user defined functions
+                    ip = &callee->co->code[0];
+                    co = callee->co;
+                    bp = sp - args - 1;
+                }
+                break;
+            }
+            case OP_RETURN: {
+                auto frame = frames.top();
+                frames.pop();
+                ip = frame.ip;
+                bp = frame.bp;
+                co = frame.co;
                 break;
             }
             default:
@@ -267,6 +282,15 @@ private:
     const uint8_t *ip;
 
     std::array<EvaValue, STACK_LIMIT> stack;
+
+    struct StackFrame
+    {
+        const uint8_t *ip;
+        EvaValue *bp;
+        CodeObject *co;
+    };
+
+    std::stack<StackFrame> frames;
     EvaValue *sp{stack.begin()};
     EvaValue *bp{sp};
     void setGlobalVariables()

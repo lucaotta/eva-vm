@@ -200,6 +200,15 @@ private:
                 auto prevCo = co;
                 auto newCode = allocCode(name, parameters.size());
                 prevCo->addConst(newCode);
+                // Define the name for the function so that we can refer
+                // to it recursively
+                if (co->isGlobalScope()) {
+                    m_globals->define(name);
+                } else {
+                    co->addLocal(name);
+                }
+
+                // Now start generating code for the new function
                 co = newCode.asCodeObject();
 
                 addCodeObject(co);
@@ -224,6 +233,8 @@ private:
 
                 auto fn = allocFunction(newCode.asCodeObject());
 
+                // Now emit code in the previous function to store
+                // the function index
                 co = prevCo;
                 co->addConst(fn);
 
@@ -231,15 +242,12 @@ private:
                 emit(co->constants.size() - 1);
 
                 if (co->isGlobalScope()) {
-                    m_globals->define(name);
                     emit(OP_SET_GLOBAL);
                     emit(m_globals->getGlobalIndex(name).value());
                 } else {
-                    co->addLocal(name);
                     emit(OP_SET_LOCAL);
                     emit(co->getLocalIndex(name).value());
                 }
-
             }
             // (begin <expression>)
             else if (op == "begin") {
