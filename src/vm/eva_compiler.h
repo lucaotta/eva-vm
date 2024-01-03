@@ -173,12 +173,11 @@ private:
                 co->enterBlock();
                 for (size_t i = 1; i < exp.list.size(); ++i) {
                     generate(exp.list[i]);
+                    const bool isLocalDeclaration = isVarDeclaration(exp.list[i])
+                                                    && !co->isGlobalScope();
                     // We have generated a value on the stack, now
                     // we need to pop it except for the last one
-                    if (i != lastElement
-                        && !(exp.list[i].type == ExpType::LIST
-                             && exp.list[i].list[0].type == ExpType::SYMBOL
-                             && exp.list[i].list[0].string == "var"))
+                    if (i != lastElement && !isLocalDeclaration)
                         emit(OP_POP);
                 }
                 exitBlock();
@@ -255,11 +254,23 @@ private:
         co->constants.push_back(allocString(value));
         return co->constants.size() - 1;
     }
+
     void exitBlock()
     {
-        emit(OP_SCOPE_EXIT);
-        emit(co->variableNumberInCurrentBlock());
+        auto varsCount = co->variableNumberInCurrentBlock();
+        if (varsCount > 0) {
+            emit(OP_SCOPE_EXIT);
+            emit(varsCount);
+        }
         co->exitBlock();
+    }
+
+    bool isVarDeclaration(Exp exp) { return isTagList(exp, "var"); }
+
+    bool isTagList(Exp exp, const std::string &tag)
+    {
+        return exp.type == ExpType::LIST && exp.list[0].type == ExpType::SYMBOL
+               && exp.list[0].string == tag;
     }
 
     std::map<ExpType, std::function<void(const Exp &)>> handlers{
