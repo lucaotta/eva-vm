@@ -65,7 +65,6 @@ public:
         m_values.push_back({name, allocNative(fn, name, arity)});
     }
 
-private:
     struct Variable
     {
         std::string name;

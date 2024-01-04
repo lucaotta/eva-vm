@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../parser/eva_parser.h"
+#include "eva_collector.h"
 #include "eva_compiler.h"
 #include "evavalue.h"
 #include "globals.h"
@@ -13,12 +14,14 @@
 
 #include <array>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
 // FIXME: use a largish stack because there are ops that don't pop
 // for example each time we load a const
 constexpr size_t STACK_LIMIT = 128;
+constexpr size_t GC_THRESHOLD = 512;
 
 #define BINARY_OP(bin_op) \
 do { \
@@ -57,8 +60,10 @@ class EvaVM
 {
 public:
     EvaVM()
-        : parser(std::make_unique<syntax::eva_parser>())
-        , m_globals(std::make_shared<Globals>())
+        : m_globals(std::make_shared<Globals>())
+        , parser(std::make_unique<syntax::eva_parser>())
+        , m_compiler(std::make_unique<EvaCompiler>(m_globals))
+        , m_collector(std::make_unique<EvaCollector>())
     {
         setGlobalVariables();
     };
@@ -70,8 +75,7 @@ public:
         // Add an implicit block so that all list of instructions are ok
         auto ast = parser->parse("(begin " + program + ")");
 
-        EvaCompiler comp(m_globals);
-        co = comp.compile(ast, "main");
+        co = m_compiler->compile(ast, "main");
         ip = &co->code[0];
         sp = stack.begin();
         return eval();
@@ -110,6 +114,7 @@ public:
                 }
                 if (isObjectType(stack2, ObjectType::STRING)
                     && isObjectType(stack1, ObjectType::STRING)) {
+                    maybeGC();
                     push(allocString(stack1.asCppString() + stack2.asCppString()));
                 }
                 break;
@@ -277,8 +282,59 @@ private:
         return *(sp - 1 - number);
     }
 
-    std::unique_ptr<syntax::eva_parser> parser;
+    void maybeGC()
+    {
+        if (Traceable::bytesAllocated < GC_THRESHOLD)
+            return;
+
+        // Three sources of roots:
+        // 1. constant objects
+        // 2. the stack
+        // 3. globals
+        auto roots = getStackGCRoots();
+
+        // Add current code to roots, so it doesn't get deleted
+        roots.insert(co);
+
+        auto constants = m_compiler->getConstantObjects();
+        roots.insert(constants.begin(), constants.end());
+
+        auto globals = getGlobalGCRoots();
+        roots.insert(globals.begin(), globals.end());
+
+        m_collector->runGC(roots);
+    }
+
+    std::set<Traceable *> getStackGCRoots()
+    {
+        std::set<Traceable *> ret;
+        auto spCopy = sp;
+        while (spCopy >= stack.begin()) {
+            if (isObject(*spCopy)) {
+                ret.insert(spCopy->asObject());
+            }
+            spCopy--;
+        }
+        return ret;
+    }
+
+    std::set<Traceable *> getGlobalGCRoots()
+    {
+        std::set<Traceable *> ret;
+
+        for (const auto &g : m_globals->m_values) {
+            if (isObject(g.value)) {
+                ret.insert(g.value.asObject());
+            }
+        }
+
+        return ret;
+    }
+
     std::shared_ptr<Globals> m_globals;
+    std::unique_ptr<syntax::eva_parser> parser;
+    std::unique_ptr<EvaCompiler> m_compiler;
+    std::unique_ptr<EvaCollector> m_collector;
 
     CodeObject *co = {nullptr};
     const uint8_t *ip;

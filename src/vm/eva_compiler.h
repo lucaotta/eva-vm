@@ -7,6 +7,7 @@
 #include "opcodes.h"
 
 #include <map>
+#include <set>
 #include <string>
 
 #define GEN_BINARY_OP(op) \
@@ -33,8 +34,7 @@ public:
 
     CodeObject *compile(const Value &input, std::string name_tag)
     {
-        co = allocCode(std::move(name_tag), 0).asCodeObject();
-        addCodeObject(co);
+        co = createCodeObject(std::move(name_tag), 0).asCodeObject();
 
         generate(input);
 
@@ -66,6 +66,7 @@ public:
             break;
         }
     }
+    std::set<Traceable *> getConstantObjects() { return m_constantObjects; }
 
 private:
     void emit(uint8_t opcode) { co->code.push_back(opcode); }
@@ -198,7 +199,7 @@ private:
 
                 // Allocate code object
                 auto prevCo = co;
-                auto newCode = allocCode(name, parameters.size());
+                auto newCode = createCodeObject(name, parameters.size());
                 prevCo->addConst(newCode);
                 // Define the name for the function so that we can refer
                 // to it recursively
@@ -210,8 +211,6 @@ private:
 
                 // Now start generating code for the new function
                 co = newCode.asCodeObject();
-
-                addCodeObject(co);
 
                 co->addLocal(name);
                 for (int i = 0; i < parameters.size(); ++i) {
@@ -232,6 +231,7 @@ private:
                 emit(OP_RETURN);
 
                 auto fn = allocFunction(newCode.asCodeObject());
+                m_constantObjects.insert(fn.asFunction());
 
                 // Now emit code in the previous function to store
                 // the function index
@@ -352,7 +352,9 @@ private:
                 return i;
             }
         }
-        co->constants.push_back(allocString(value));
+        auto str = allocString(value);
+        co->constants.push_back(str);
+        m_constantObjects.insert(str.asString());
         return co->constants.size() - 1;
     }
 
@@ -380,11 +382,20 @@ private:
         return exp.type == ExpType::LIST && exp.list[0].type == ExpType::SYMBOL
                && exp.list[0].string == tag;
     }
-    void addCodeObject(CodeObject *) { m_codeObjects.push_back(co); };
+    void addCodeObject(CodeObject *co) { m_codeObjects.push_back(co); };
+    EvaValue createCodeObject(std::string name, int arity)
+    {
+        auto ret = allocCode(std::move(name), arity);
+        addCodeObject(ret.asCodeObject());
+        m_constantObjects.insert(ret.asObject());
+        return ret;
+    }
 
     CodeObject *co{nullptr};
     std::shared_ptr<Globals> m_globals;
     std::vector<CodeObject *> m_codeObjects;
+    std::set<Traceable *> m_constantObjects;
+
     static std::map<std::string, ComparisonType> comparison;
 };
 
