@@ -63,6 +63,8 @@ public:
         setGlobalVariables();
     };
 
+    ~EvaVM() { Traceable::clear(); }
+
     EvaValue exec(const std::string &program)
     {
         // Add an implicit block so that all list of instructions are ok

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
+#include <list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -45,7 +47,41 @@ struct EvaValue
     FunctionObject *asFunction() const;
 };
 
-struct Object
+struct Traceable
+{
+    static void *operator new(size_t sz)
+    {
+        void *object = ::operator new(sz);
+        ((Traceable *) object)->size = sz;
+        Traceable::objects.push_back((Traceable *) object);
+        Traceable::bytesAllocated += sz;
+        return object;
+    }
+
+    static void operator delete(void *ptr)
+    {
+        Traceable::bytesAllocated -= ((Traceable *) ptr)->size;
+        ::operator delete(ptr);
+    }
+
+    static void printStats();
+
+    static void clear()
+    {
+        for (Traceable *o : objects) {
+            delete o;
+        }
+        objects.clear();
+    }
+
+    bool marked{false};
+    size_t size;
+
+    static size_t bytesAllocated;
+    static std::list<Traceable *> objects;
+};
+
+struct Object : public Traceable
 {
     Object(ObjectType type)
         : type(type)

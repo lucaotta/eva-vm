@@ -1,20 +1,25 @@
 #include "evavm.h"
 
-int main() {
-    EvaVM vm;
-    auto result = vm.exec(R"(
-        (var i 10)
-        (var count 0)
-        (while (> i 0)
-            (begin
-                (set count (+ count 2))
-                (set i (- i 1))
-            )
-        )
-        count
+int main()
+{
+    EvaValue result = BOOLEAN(false);
+    {
+        EvaVM vm;
+        Traceable::printStats();
+        /*
+         * 1. Code object in VM
+         * 2. "hello" string
+         * 3. ", world" string
+         * 4. "hello, world" string
+         * 5. Native function `square`
+         */
+        result = vm.exec(R"(
+    (+ "hello" ", world")
     )");
-
-    std::cout << toString(result) << '\n';
+        Traceable::printStats();
+        std::cout << "Exit correctly, value " << toString(result) << '\n';
+    }
+    Traceable::printStats();
 
     return 0;
 }

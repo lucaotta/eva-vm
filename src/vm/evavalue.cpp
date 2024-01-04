@@ -56,3 +56,13 @@ FunctionObject *EvaValue::asFunction() const
     }
     return nullptr;
 }
+
+size_t Traceable::bytesAllocated{0};
+std::list<Traceable *> Traceable::objects;
+
+void Traceable::printStats()
+{
+    std::cout << "Objects: " << objects.size() << "\n";
+    std::cout << "Memory: " << Traceable::bytesAllocated << "\n";
+    std::cout << std::endl;
+}

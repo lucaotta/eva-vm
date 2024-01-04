@@ -59,7 +59,7 @@ int main()
         auto g = std::make_shared<Globals>();
         EvaCompiler c(g);
         syntax::eva_parser p;
-        std::unique_ptr<CodeObject> co{c.compile(p.parse(R"#((+ 1 1))#"), "test")};
+        auto co{c.compile(p.parse(R"#((+ 1 1))#"), "test")};
         CHECK_CPPNUMBER(co->constants.size(), 1);
     }
 
@@ -67,7 +67,7 @@ int main()
         auto g = std::make_shared<Globals>();
         EvaCompiler c(g);
         syntax::eva_parser p;
-        std::unique_ptr<CodeObject> co{c.compile(p.parse(R"#((+ "hello" "hello"))#"), "test")};
+        auto co{c.compile(p.parse(R"#((+ "hello" "hello"))#"), "test")};
         CHECK_CPPNUMBER(co->constants.size(), 1);
     }
 
@@ -228,4 +228,6 @@ int main()
     //                 20);
 
     std::cout << "All tests passed\n";
+    Traceable::printStats();
+    std::cout << std::endl;
 }

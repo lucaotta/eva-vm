@@ -3,6 +3,8 @@ project(EvaVM VERSION 1.0)
 
 set(LANGUAGE CXX)
 
+set(CXX_STANDARD 17)
+
 add_executable(EvaVM
     src/vm/main.cpp
 
